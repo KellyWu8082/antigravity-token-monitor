@@ -1,0 +1,55 @@
+appId: com.antigravity.token-telemetry
+productName: Antigravity Token
+copyright: Copyright © 2026 Antigravity Token Telemetry
+asar: true
+toolsets:
+  nsis: "1.2.1"
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist-electron/**/*
+  - out/**/*
+  - package.json
+  - "!node_modules/**/*"
+mac:
+  category: public.app-category.developer-tools
+  icon: build/icon.icns
+  identity: null
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  target:
+    - target: dmg
+      arch:
+        - arm64
+    - target: zip
+      arch:
+        - arm64
+dmg:
+  title: "${productName} ${version}"
+  artifactName: "Antigravity-Token-${version}-${arch}.${ext}"
+  contents:
+    - x: 140
+      y: 180
+    - x: 400
+      y: 180
+      type: link
+      path: /Applications
+win:
+  icon: build/icon.ico
+  signAndEditExecutable: true
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  artifactName: "Antigravity-Token-Setup-${version}-${arch}.${ext}"
+portable:
+  artifactName: "Antigravity-Token-Portable-${version}-${arch}.${ext}"

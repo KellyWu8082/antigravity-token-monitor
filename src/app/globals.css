@@ -1,0 +1,398 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Native UI & scrollbar scheme synchronization (follows system unless overridden via <meta>) */
+  color-scheme: light dark;
+
+  --nx-surface-canvas-light: #fafafa;
+  --nx-surface-canvas-dark: #070b14;
+  --nx-surface-panel-light: rgba(255, 255, 255, 0.72);
+  --nx-surface-panel-dark: rgba(15, 23, 42, 0.72);
+  --nx-accent-light: #4f46e5;
+  --nx-accent-dark: #22d3ee;
+
+  --nx-scrollbar-track-light: rgba(228, 228, 231, 0.55);
+  --nx-scrollbar-track-dark: rgba(15, 23, 42, 0.55);
+  --nx-scrollbar-thumb-light: #9ca3af;
+  --nx-scrollbar-thumb-dark: #475569;
+
+  --nx-surface-canvas: var(--nx-surface-canvas-light);
+  --nx-surface-panel: var(--nx-surface-panel-light);
+  --nx-accent: var(--nx-accent-light);
+  --nx-scrollbar-track: var(--nx-scrollbar-track-light);
+  --nx-scrollbar-thumb: var(--nx-scrollbar-thumb-light);
+
+  @media (prefers-color-scheme: dark) {
+    --nx-surface-canvas: var(--nx-surface-canvas-dark);
+    --nx-surface-panel: var(--nx-surface-panel-dark);
+    --nx-accent: var(--nx-accent-dark);
+    --nx-scrollbar-track: var(--nx-scrollbar-track-dark);
+    --nx-scrollbar-thumb: var(--nx-scrollbar-thumb-dark);
+  }
+
+  @supports (color: light-dark(white, black)) {
+    --nx-surface-canvas: light-dark(
+      var(--nx-surface-canvas-light),
+      var(--nx-surface-canvas-dark)
+    );
+    --nx-surface-panel: light-dark(
+      var(--nx-surface-panel-light),
+      var(--nx-surface-panel-dark)
+    );
+    --nx-accent: light-dark(var(--nx-accent-light), var(--nx-accent-dark));
+    --nx-scrollbar-track: light-dark(
+      var(--nx-scrollbar-track-light),
+      var(--nx-scrollbar-track-dark)
+    );
+    --nx-scrollbar-thumb: light-dark(
+      var(--nx-scrollbar-thumb-light),
+      var(--nx-scrollbar-thumb-dark)
+    );
+  }
+
+  accent-color: var(--nx-accent);
+}
+
+:root:has(> head > meta[name="color-scheme"][content="dark"]) {
+  color-scheme: dark;
+  --nx-surface-canvas: var(--nx-surface-canvas-dark);
+  --nx-surface-panel: var(--nx-surface-panel-dark);
+  --nx-accent: var(--nx-accent-dark);
+  --nx-scrollbar-track: var(--nx-scrollbar-track-dark);
+  --nx-scrollbar-thumb: var(--nx-scrollbar-thumb-dark);
+}
+
+:root:has(> head > meta[name="color-scheme"][content="light"]) {
+  color-scheme: light;
+  --nx-surface-canvas: var(--nx-surface-canvas-light);
+  --nx-surface-panel: var(--nx-surface-panel-light);
+  --nx-accent: var(--nx-accent-light);
+  --nx-scrollbar-track: var(--nx-scrollbar-track-light);
+  --nx-scrollbar-thumb: var(--nx-scrollbar-thumb-light);
+}
+
+html,
+body {
+  background-color: var(--nx-surface-canvas);
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Accessible high-contrast keyboard focus ring */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid Highlight;
+  }
+}
+
+/* Custom thin scrollbars with WebKit fallback */
+.nx-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--nx-scrollbar-thumb) transparent;
+}
+
+@supports not (scrollbar-color: auto) {
+  .nx-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .nx-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--nx-scrollbar-thumb);
+    border-radius: 9999px;
+  }
+  .nx-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* Ambient architectural grid background */
+.nx-bg-grid {
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+}
+
+:root:has(> head > meta[name="color-scheme"][content="dark"]) .nx-bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(:has(> head > meta[name="color-scheme"][content="light"])) .nx-bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+  }
+}
+
+/* Native <dialog> top-layer scroll lock & smooth entry/exit transitions */
+dialog.nx-dialog {
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100dvh - 2rem);
+  opacity: 0;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.22s;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transition-behavior: allow-discrete;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.nx-dialog {
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+dialog.nx-dialog:is([open]):where(:not([data-closing])) {
+  opacity: 1;
+}
+
+dialog.nx-dialog:is([open]):where(:not([data-closing])) {
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.nx-dialog:is([open]):where(:not([data-closing])) {
+    transform: translateY(0) scale(1);
+  }
+
+  @starting-style {
+    dialog.nx-dialog:is([open]):where(:not([data-closing])) {
+      transform: translateY(10px) scale(0.96);
+    }
+  }
+}
+
+dialog.nx-dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog.nx-dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background-color: rgba(15, 23, 42, 0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  transition-property: background-color, backdrop-filter, display, overlay;
+  transition-duration: 0.22s;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transition-behavior: allow-discrete;
+}
+
+dialog.nx-dialog:is([open]):where(:not([data-closing]))::backdrop {
+  background-color: rgba(7, 11, 20, 0.56);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+@starting-style {
+  dialog.nx-dialog:is([open]):where(:not([data-closing]))::backdrop {
+    background-color: rgba(7, 11, 20, 0);
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.nx-dialog,
+  dialog.nx-dialog::backdrop {
+    transition-duration: 0.08s;
+  }
+}
+
+/* Native <progress> custom styling (AI Aurora Progress Bar) */
+progress.nx-progress {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0 solid;
+  display: block;
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  overflow: clip;
+  container-type: inline-size;
+  background: rgba(148, 163, 184, 0.22);
+  box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.08);
+  --progress-bar-indeterminate-size: 35%;
+  --progress-bar-indeterminate-duration: 1.4s;
+}
+
+:root:has(> head > meta[name="color-scheme"][content="dark"]) progress.nx-progress {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(:has(> head > meta[name="color-scheme"][content="light"])) progress.nx-progress {
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  progress.nx-progress {
+    --progress-bar-indeterminate-duration: 10s;
+  }
+}
+
+progress.nx-progress::-webkit-progress-bar {
+  background: transparent;
+}
+
+progress.nx-progress::-webkit-progress-value {
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 48%, #22d3ee 100%);
+  transition: inline-size 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: var(--progress-bar-animation, revert-rule);
+}
+
+progress.nx-progress::-moz-progress-bar {
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 48%, #22d3ee 100%);
+  transition: inline-size 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: var(--progress-bar-animation, revert-rule);
+}
+
+progress.nx-progress[data-done="true"]::-webkit-progress-value {
+  background: linear-gradient(90deg, #10b981 0%, #22d3ee 100%);
+}
+
+progress.nx-progress[data-done="true"]::-moz-progress-bar {
+  background: linear-gradient(90deg, #10b981 0%, #22d3ee 100%);
+}
+
+progress.nx-progress:indeterminate {
+  --progress-bar-animation: nx-progress-indeterminate var(--progress-bar-indeterminate-duration) infinite linear;
+}
+
+@keyframes nx-progress-indeterminate {
+  from,
+  to {
+    inline-size: var(--progress-bar-indeterminate-size);
+    margin-right: auto;
+  }
+  from {
+    translate: -100%;
+  }
+  to {
+    translate: 100cqi;
+  }
+}
+
+@media (forced-colors: active) {
+  progress.nx-progress {
+    border: 1px solid ButtonBorder;
+  }
+  progress.nx-progress::-webkit-progress-value {
+    background: Highlight;
+  }
+  progress.nx-progress::-moz-progress-bar {
+    background: Highlight;
+  }
+}
+
+/* Reduced motion guards for CSS keyframe animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer,
+  .animate-breathe,
+  .animate-node-glow {
+    animation-duration: 12s !important;
+  }
+}
+
+/* Smooth anchor scroll with topbar clearance */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+.nx-anchor-section {
+  scroll-margin-top: 5rem;
+}
+
+/* Layout/paint isolation for heavy dashboard sections to minimize INP reflows */
+.nx-panel-isolated {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+
+@supports not (content-visibility: auto) {
+  .nx-panel-isolated {
+    contain: layout style paint;
+  }
+}
+
+/* Native <details> progressive disclosure with smooth intrinsic-size slide */
+details.nx-disclosure > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+details.nx-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.nx-disclosure > summary .nx-disclosure-chevron {
+  transition: rotate 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  rotate: -90deg;
+}
+
+details.nx-disclosure[open] > summary .nx-disclosure-chevron {
+  rotate: 0deg;
+}
+
+details.nx-disclosure::details-content {
+  interpolate-size: allow-keywords;
+  overflow: clip;
+  contain: layout;
+}
+
+details.nx-disclosure:not([open])::details-content {
+  block-size: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  details.nx-disclosure::details-content {
+    transition: block-size, content-visibility, display;
+    transition-duration: 0.28s;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    transition-behavior: allow-discrete;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  details.nx-disclosure > summary .nx-disclosure-chevron {
+    transition: none;
+  }
+}
+
+/* Electron frameless/hiddenInset titlebar drag helpers */
+.nx-drag-region {
+  -webkit-app-region: drag;
+}
+
+.nx-no-drag {
+  -webkit-app-region: no-drag;
+}
+
