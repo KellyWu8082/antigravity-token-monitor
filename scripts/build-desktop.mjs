@@ -84,6 +84,10 @@ function buildNextStaticExport() {
 
     fs.rmSync(OUT_DIR, { recursive: true, force: true });
     fs.rmSync(path.join(NEXT_DIR, "types"), { recursive: true, force: true });
+    fs.rmSync(path.join(NEXT_DIR, "dev", "types"), {
+      recursive: true,
+      force: true,
+    });
 
     const nextBin = path.join(
       ROOT,
