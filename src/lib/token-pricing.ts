@@ -42,19 +42,37 @@ export const MODEL_PRICING_CATALOG: readonly ModelPricingRate[] = [
     id: "gemini-4-hydrogen",
     label: "Gemini 4 Hydrogen",
     inputPer1M: 1.5,
-    cacheReadPer1M: 0.15,
+    cacheReadPer1M: 0.075,
     cacheWritePer1M: 1.5,
     outputPer1M: 7.5,
-    note: "Gemini 4 Hydrogen 标准费率 (含 Thinking)",
+    note: "Gemini 4 Hydrogen 标准费率 (缓存读取 0.05x，含 Thinking)",
+  },
+  {
+    id: "gemini-4-neon",
+    label: "Gemini 4 Neon",
+    inputPer1M: 3.0,
+    cacheReadPer1M: 0.15,
+    cacheWritePer1M: 3.0,
+    outputPer1M: 15.0,
+    note: "Gemini 4 Neon 标准费率 (缓存读取 0.05x，含 Thinking)",
+  },
+  {
+    id: "gemini-4-carbon",
+    label: "Gemini 4 Carbon",
+    inputPer1M: 4.0,
+    cacheReadPer1M: 0.2,
+    cacheWritePer1M: 4.0,
+    outputPer1M: 20.0,
+    note: "Gemini 4 Carbon 标准费率 (2026-11-30 前尝鲜期 5 折，缓存读取 0.05x，含 Thinking)",
   },
   {
     id: "gemini-4-argon",
     label: "Gemini 4 Argon",
-    inputPer1M: 2.0,
+    inputPer1M: 4.0,
     cacheReadPer1M: 0.2,
-    cacheWritePer1M: 2.0,
-    outputPer1M: 10.0,
-    note: "Gemini 4 Argon 前沿档参考费率 (含 Thinking)",
+    cacheWritePer1M: 4.0,
+    outputPer1M: 20.0,
+    note: "Gemini 4 Argon 标准费率 (2026-11-30 前尝鲜期 5 折，缓存读取 0.05x，含 Thinking)",
   },
   {
     id: "gemini-pro",
@@ -137,6 +155,18 @@ export function resolveModelGroup(
       groupName: "Gemini 4 Hydrogen",
     };
   }
+  if (combined.includes("neon")) {
+    return {
+      groupId: "gemini-4-neon",
+      groupName: "Gemini 4 Neon",
+    };
+  }
+  if (combined.includes("carbon")) {
+    return {
+      groupId: "gemini-4-carbon",
+      groupName: "Gemini 4 Carbon",
+    };
+  }
   if (combined.includes("argon")) {
     return {
       groupId: "gemini-4-argon",
@@ -214,6 +244,12 @@ export function resolveModelPricing(
   }
   if (key.includes("hydrogen")) {
     return getRate("gemini-4-hydrogen");
+  }
+  if (key.includes("neon")) {
+    return getRate("gemini-4-neon");
+  }
+  if (key.includes("carbon")) {
+    return getRate("gemini-4-carbon");
   }
   if (key.includes("argon")) {
     return getRate("gemini-4-argon");
