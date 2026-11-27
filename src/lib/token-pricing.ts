@@ -63,7 +63,7 @@ export const MODEL_PRICING_CATALOG: readonly ModelPricingRate[] = [
     cacheReadPer1M: 0.2,
     cacheWritePer1M: 4.0,
     outputPer1M: 20.0,
-    note: "Gemini 4 Carbon 标准费率 (2026-11-30 前尝鲜期 5 折，缓存读取 0.05x，含 Thinking)",
+    note: "Gemini 4 Carbon 标准费率 (2026-11-30 UTC 前轮次按 5 折活动价自动折算，缓存读取 0.05x，含 Thinking)",
   },
   {
     id: "gemini-4-argon",
@@ -72,7 +72,7 @@ export const MODEL_PRICING_CATALOG: readonly ModelPricingRate[] = [
     cacheReadPer1M: 0.2,
     cacheWritePer1M: 4.0,
     outputPer1M: 20.0,
-    note: "Gemini 4 Argon 标准费率 (2026-11-30 前尝鲜期 5 折，缓存读取 0.05x，含 Thinking)",
+    note: "Gemini 4 Argon 标准费率 (2026-11-30 UTC 前轮次按 5 折活动价自动折算，缓存读取 0.05x，含 Thinking)",
   },
   {
     id: "gemini-pro",
@@ -224,61 +224,116 @@ export function resolveModelGroup(
   };
 }
 
+interface PromotionalPricingWindow {
+  readonly rateIds: ReadonlySet<string>;
+  /** Exclusive upper bound in UTC ms (active while timestamp < endsBeforeMs). */
+  readonly endsBeforeMs: number;
+  readonly multiplier: number;
+  readonly noteSuffix: string;
+}
+
+const PROMO_PRICING_WINDOWS: readonly PromotionalPricingWindow[] = [
+  {
+    rateIds: new Set(["gemini-4-carbon", "gemini-4-argon"]),
+    endsBeforeMs: Date.parse("2026-12-01T00:00:00Z"),
+    multiplier: 0.5,
+    noteSuffix: " [尝鲜期 5 折生效]",
+  },
+];
+
+function parseTimestampMs(
+  atTimestamp?: string | number | Date | null
+): number | null {
+  if (atTimestamp === undefined || atTimestamp === null) return null;
+  if (typeof atTimestamp === "number") {
+    return Number.isFinite(atTimestamp) ? atTimestamp : null;
+  }
+  if (atTimestamp instanceof Date) {
+    const ms = atTimestamp.getTime();
+    return Number.isFinite(ms) ? ms : null;
+  }
+  const ms = Date.parse(atTimestamp);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function roundRate(value: number): number {
+  return Math.round(value * 1_000_000) / 1_000_000;
+}
+
+function applyPromotionalPricing(
+  rate: ModelPricingRate,
+  atTimestamp?: string | number | Date | null
+): ModelPricingRate {
+  const ms = parseTimestampMs(atTimestamp);
+  if (ms === null) return rate;
+
+  for (const promo of PROMO_PRICING_WINDOWS) {
+    if (promo.rateIds.has(rate.id) && ms < promo.endsBeforeMs) {
+      return {
+        ...rate,
+        inputPer1M: roundRate(rate.inputPer1M * promo.multiplier),
+        cacheReadPer1M: roundRate(rate.cacheReadPer1M * promo.multiplier),
+        cacheWritePer1M: roundRate(rate.cacheWritePer1M * promo.multiplier),
+        outputPer1M: roundRate(rate.outputPer1M * promo.multiplier),
+        note: `${rate.note}${promo.noteSuffix}`,
+      };
+    }
+  }
+  return rate;
+}
+
 export function resolveModelPricing(
   modelName: string,
-  modelSlug: string
+  modelSlug: string,
+  atTimestamp?: string | number | Date | null
 ): ModelPricingRate {
   const key = `${modelName} ${modelSlug}`.toLowerCase();
 
+  let baseRate: ModelPricingRate;
   if (key.includes("opus") && (key.includes("5.5") || key.includes("5-5"))) {
-    return getRate("claude-opus-5.5");
-  }
-  if (key.includes("opus") && (key.includes("4.6") || key.includes("4-6"))) {
-    return getRate("claude-opus-4.6");
-  }
-  if (key.includes("opus")) {
-    return getRate("claude-opus-4.6");
-  }
-  if (key.includes("sonnet")) {
-    return getRate("claude-sonnet");
-  }
-  if (key.includes("hydrogen")) {
-    return getRate("gemini-4-hydrogen");
-  }
-  if (key.includes("neon")) {
-    return getRate("gemini-4-neon");
-  }
-  if (key.includes("carbon")) {
-    return getRate("gemini-4-carbon");
-  }
-  if (key.includes("argon")) {
-    return getRate("gemini-4-argon");
-  }
-  if (key.includes("3.5") && key.includes("flash")) {
-    return getRate("gemini-3.5-flash");
-  }
-  if (
+    baseRate = getRate("claude-opus-5.5");
+  } else if (
+    key.includes("opus") &&
+    (key.includes("4.6") || key.includes("4-6"))
+  ) {
+    baseRate = getRate("claude-opus-4.6");
+  } else if (key.includes("opus")) {
+    baseRate = getRate("claude-opus-4.6");
+  } else if (key.includes("sonnet")) {
+    baseRate = getRate("claude-sonnet");
+  } else if (key.includes("hydrogen")) {
+    baseRate = getRate("gemini-4-hydrogen");
+  } else if (key.includes("neon")) {
+    baseRate = getRate("gemini-4-neon");
+  } else if (key.includes("carbon")) {
+    baseRate = getRate("gemini-4-carbon");
+  } else if (key.includes("argon")) {
+    baseRate = getRate("gemini-4-argon");
+  } else if (key.includes("3.5") && key.includes("flash")) {
+    baseRate = getRate("gemini-3.5-flash");
+  } else if (
     (key.includes("3.8") || key.includes("3.7") || key.includes("3.6")) &&
     key.includes("flash")
   ) {
-    return getRate("gemini-3.8-flash");
-  }
-  if (key.includes("flash")) {
-    return getRate("gemini-3-flash");
-  }
-  if (key.includes("pro")) {
-    return getRate("gemini-pro");
+    baseRate = getRate("gemini-3.8-flash");
+  } else if (key.includes("flash")) {
+    baseRate = getRate("gemini-3-flash");
+  } else if (key.includes("pro")) {
+    baseRate = getRate("gemini-pro");
+  } else {
+    baseRate = getRate("gemini-pro");
   }
 
-  return getRate("gemini-pro");
+  return applyPromotionalPricing(baseRate, atTimestamp);
 }
 
 export function calculateTokenCost(
   modelName: string,
   modelSlug: string,
-  usage: TokenBreakdown
+  usage: TokenBreakdown,
+  atTimestamp?: string | number | Date | null
 ): CostBreakdown {
-  const rate = resolveModelPricing(modelName, modelSlug);
+  const rate = resolveModelPricing(modelName, modelSlug, atTimestamp);
 
   const inputCostUsd = (usage.inputTokens / ONE_MILLION) * rate.inputPer1M;
   const cacheReadCostUsd =

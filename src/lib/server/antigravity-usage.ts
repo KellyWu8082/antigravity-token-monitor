@@ -340,6 +340,7 @@ function parseGenMetadataTurn(
   turnIndex: number,
   blob: Uint8Array,
   stepTimestamps: ReadonlyMap<number, number>,
+  fallbackTimestampMs: number,
 ): TurnTokenDetail | null {
   let usage: TokenBreakdown | null = null;
   let modelName = "";
@@ -388,7 +389,12 @@ function parseGenMetadataTurn(
     }
   }
 
-  const cost = calculateTokenCost(resolvedModelName, resolvedSlug, usage);
+  const cost = calculateTokenCost(
+    resolvedModelName,
+    resolvedSlug,
+    usage,
+    timestamp ?? fallbackTimestampMs,
+  );
 
   return {
     turnIndex,
@@ -579,12 +585,22 @@ function parseSessionDatabase(
       )
       .all() as { readonly idx: number; readonly data: Uint8Array }[];
 
+    const fallbackSec = Math.floor(mtimeMs / 1000);
+    const createdAtSec =
+      trajectoryMeta.createdAtSec ?? minStepSec ?? fallbackSec;
+    const sessionFallbackTimestampMs = createdAtSec * 1000;
+
     const turns: TurnTokenDetail[] = [];
     const acc = createAccumulator();
     const modelTurns = new Map<string, number>();
 
     for (const row of genRows) {
-      const turn = parseGenMetadataTurn(row.idx, row.data, stepTimestamps);
+      const turn = parseGenMetadataTurn(
+        row.idx,
+        row.data,
+        stepTimestamps,
+        sessionFallbackTimestampMs,
+      );
       if (!turn) continue;
       turns.push(turn);
       addToAccumulator(acc, turn.usage, turn.cost);
@@ -595,9 +611,6 @@ function parseSessionDatabase(
       return null;
     }
 
-    const fallbackSec = Math.floor(mtimeMs / 1000);
-    const createdAtSec =
-      trajectoryMeta.createdAtSec ?? minStepSec ?? fallbackSec;
     const updatedAtSec = Math.max(maxStepSec ?? createdAtSec, fallbackSec);
 
     const sortedModels = [...modelTurns.entries()].sort((a, b) => b[1] - a[1]);
